@@ -7,7 +7,12 @@ const app = express();
 
 // CORS configuration
 const corsOptions = {
-  origin: ['https://teethtracks.com', 'https://www.teethtracks.com', 'http://localhost:8080'],
+  origin: [
+    'https://teethtracks.com',
+    'https://www.teethtracks.com',
+    'http://localhost:8080',
+    'https://67d449e347c59c1ec46966fc--gregarious-manatee-622d89.netlify.app'
+  ],
   methods: ['GET', 'POST'],
   credentials: true,
   optionsSuccessStatus: 204
