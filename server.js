@@ -1,7 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -18,92 +17,88 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// Serve static files from the parent directory
-app.use(express.static(path.join(__dirname, '..')));
-
-// MongoDB Connection with better error handling
-console.log('Attempting to connect to MongoDB...');
+// MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log('Successfully connected to MongoDB Atlas!');
-  })
-  .catch(err => {
-    console.error('MongoDB connection error:', err);
-    console.error('Connection string:', process.env.MONGODB_URI.replace(/:[^:@]+@/, ':****@')); // Hide password in logs
-  });
+  .then(() => console.log('Connected to MongoDB Atlas!'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
 // Demo Request Schema
 const demoRequestSchema = new mongoose.Schema({
-  practiceName: {
-    type: String,
-    required: true
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  phoneNumber: {
-    type: String,
-    required: true
-  },
-  message: {
-    type: String,
-    required: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
+  practiceName: { type: String, required: true },
+  email: { type: String, required: true },
+  phoneNumber: { type: String, required: true },
+  message: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now }
 });
 
 const DemoRequest = mongoose.model('DemoRequest', demoRequestSchema);
 
 // API Routes
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'index.html'));
+  res.json({
+    status: 'TeethTrack API is running',
+    version: '1.0.0',
+    endpoints: {
+      root: '/ - This help message',
+      submitDemo: 'POST /api/demo-request - Submit a demo request',
+      getDemos: 'GET /api/demo-requests - Get all demo requests'
+    },
+    note: 'This is an API server only. For the website, please visit https://teethtracks.com'
+  });
 });
 
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'admin.html'));
-});
-
+// Submit Demo Request
 app.post('/api/demo-request', async (req, res) => {
   try {
-    console.log('Received demo request:', req.body);
-    const { practiceName, email, phoneNumber, message } = req.body;
-    
-    const demoRequest = new DemoRequest({
-      practiceName,
-      email,
-      phoneNumber,
-      message
-    });
-
+    const demoRequest = new DemoRequest(req.body);
     await demoRequest.save();
-    console.log('Demo request saved successfully');
-    res.status(201).json({ message: 'Demo request submitted successfully' });
+    console.log('Demo request saved:', demoRequest);
+    res.status(201).json({
+      success: true,
+      message: 'Demo request submitted successfully',
+      data: demoRequest
+    });
   } catch (error) {
     console.error('Error saving demo request:', error);
-    res.status(500).json({ error: 'Failed to submit demo request', details: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to submit demo request',
+      error: error.message
+    });
   }
 });
 
+// Get All Demo Requests
 app.get('/api/demo-requests', async (req, res) => {
   try {
-    console.log('Fetching demo requests...');
     const requests = await DemoRequest.find().sort({ createdAt: -1 });
-    console.log(`Found ${requests.length} demo requests`);
-    res.json(requests);
+    res.json({
+      success: true,
+      count: requests.length,
+      data: requests
+    });
   } catch (error) {
     console.error('Error fetching demo requests:', error);
-    res.status(500).json({ error: 'Failed to fetch demo requests', details: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch demo requests',
+      error: error.message
+    });
   }
+});
+
+// Handle 404 - API endpoint not found
+app.use((req, res) => {
+  res.status(404).json({
+    status: 'error',
+    message: 'API endpoint not found',
+    note: 'This is an API server. For the website, please visit https://teethtracks.com'
+  });
 });
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Access the website at http://localhost:${PORT}`);
-  console.log(`Access the admin panel at http://localhost:${PORT}/admin`);
+  console.log(`TeethTrack API server running on port ${PORT}`);
+  console.log('This is an API-only server');
+  console.log('For the website, visit: https://teethtracks.com');
 }); 
