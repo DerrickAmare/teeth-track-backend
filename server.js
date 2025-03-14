@@ -17,84 +17,76 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// MongoDB Connection with better error handling
-console.log('Attempting to connect to MongoDB...');
+// MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log('Successfully connected to MongoDB Atlas!');
-  })
-  .catch(err => {
-    console.error('MongoDB connection error:', err);
-    console.error('Connection string:', process.env.MONGODB_URI.replace(/:[^:@]+@/, ':****@')); // Hide password in logs
-  });
+  .then(() => console.log('Connected to MongoDB Atlas!'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
 // Demo Request Schema
 const demoRequestSchema = new mongoose.Schema({
-  practiceName: {
-    type: String,
-    required: true
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  phoneNumber: {
-    type: String,
-    required: true
-  },
-  message: {
-    type: String,
-    required: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
+  practiceName: { type: String, required: true },
+  email: { type: String, required: true },
+  phoneNumber: { type: String, required: true },
+  message: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now }
 });
 
 const DemoRequest = mongoose.model('DemoRequest', demoRequestSchema);
 
-// Health check endpoint
+// API Health Check
 app.get('/', (req, res) => {
-  res.json({ status: 'API is running' });
+  res.json({ 
+    status: 'API is running',
+    message: 'Welcome to TeethTrack API',
+    endpoints: {
+      health: '/',
+      submitDemo: '/api/demo-request',
+      getDemos: '/api/demo-requests'
+    }
+  });
 });
 
-// API Routes
+// Submit Demo Request
 app.post('/api/demo-request', async (req, res) => {
   try {
-    console.log('Received demo request:', req.body);
-    const { practiceName, email, phoneNumber, message } = req.body;
-    
-    const demoRequest = new DemoRequest({
-      practiceName,
-      email,
-      phoneNumber,
-      message
-    });
-
+    const demoRequest = new DemoRequest(req.body);
     await demoRequest.save();
-    console.log('Demo request saved successfully');
-    res.status(201).json({ message: 'Demo request submitted successfully' });
+    console.log('Demo request saved:', demoRequest);
+    res.status(201).json({ 
+      success: true,
+      message: 'Demo request submitted successfully',
+      data: demoRequest
+    });
   } catch (error) {
     console.error('Error saving demo request:', error);
-    res.status(500).json({ error: 'Failed to submit demo request', details: error.message });
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to submit demo request',
+      error: error.message 
+    });
   }
 });
 
+// Get All Demo Requests
 app.get('/api/demo-requests', async (req, res) => {
   try {
-    console.log('Fetching demo requests...');
     const requests = await DemoRequest.find().sort({ createdAt: -1 });
-    console.log(`Found ${requests.length} demo requests`);
-    res.json(requests);
+    res.json({
+      success: true,
+      count: requests.length,
+      data: requests
+    });
   } catch (error) {
     console.error('Error fetching demo requests:', error);
-    res.status(500).json({ error: 'Failed to fetch demo requests', details: error.message });
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to fetch demo requests',
+      error: error.message
+    });
   }
 });
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`TeethTrack API server running on port ${PORT}`);
 }); 
