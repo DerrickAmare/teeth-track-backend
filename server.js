@@ -10,7 +10,10 @@ const corsOptions = {
   origin: [
     'https://teethtracks.com',
     'https://www.teethtracks.com',
+    'http://teethtracks.com',
+    'http://www.teethtracks.com',
     'http://localhost:8080',
+    'http://localhost:3000',
     'https://67d449e347c59c1ec46966fc--gregarious-manatee-622d89.netlify.app'
   ],
   methods: ['GET', 'POST'],
